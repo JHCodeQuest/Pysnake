@@ -21,8 +21,16 @@ def place_food(snake):
     """Return a random cell not occupied by the snake."""
     while True:
         pos = (random.randrange(GRID_WIDTH), random.randrange(GRID_HEIGHT))
-        if pos not in snake:
+        snake_positions = [segment[0] if isinstance(segment, tuple) and len(segment) == 2 else segment for segment in snake]
+        if pos not in snake_positions:
             return pos
+        
+def random_colour():
+    return(
+        random.randint(80, 255),
+        random.randint(80, 255),
+        random.randint(80, 255)
+    )
 
 
 def draw_rect(screen, color, pos):
@@ -42,7 +50,8 @@ def main():
 
     def reset():
         start = (GRID_WIDTH // 2, GRID_HEIGHT // 2)
-        return [start], (1, 0), place_food([start]), 0, False
+        snake_with_colors = [(start, (50, 200, 50))]  # (position, color)
+        return snake_with_colors, (1, 0), place_food(snake_with_colors), 0, False
 
     snake, direction, food, score, game_over = reset()
 
@@ -68,18 +77,19 @@ def main():
                     sys.exit()
 
             if event.type == MOVE_EVENT and not game_over:
-                head = snake[0]
+                head_pos = snake[0][0]
                 dx, dy = direction
-                new = (head[0] + dx, head[1] + dy)
+                new = (head_pos[0] + dx, head_pos[1] + dy)
 
                 # Check wall collision
                 if not (0 <= new[0] < GRID_WIDTH and 0 <= new[1] < GRID_HEIGHT):
                     game_over = True
                 # Check self collision
-                elif new in snake:
+                elif any(segment[0] == new for segment in snake):
                     game_over = True
                 else:
-                    snake.insert(0, new)
+                    new_color = random_colour()
+                    snake.insert(0, (new, new_color))
                     if new == food:
                         score += 1
                         food = place_food(snake)
@@ -94,8 +104,8 @@ def main():
 
         # Draw snake
         for i, segment in enumerate(snake):
-            color = (50, 200, 50) if i == 0 else (20, 150, 20)
-            draw_rect(screen, color, segment)
+            pos, color = segment
+            draw_rect(screen, color, pos)
 
         # Draw score
         score_surf = font.render(f"Score: {score}", True, (255, 255, 255))
